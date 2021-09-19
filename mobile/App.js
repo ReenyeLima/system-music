@@ -8,11 +8,10 @@ const pauseIcon = require('./assets/pause.png');
 
 export default function App() {
   const [listmusic, setListmusic] = useState();
-  const [sound, setSound] = useState();
-  const [inplay, setInplay] = useState();
   const [playing, setPlaying] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
-  const teste = useRef(new Audio.Sound());
+  const sound = useRef(new Audio.Sound());
 
   const getList = async () => {
     try {
@@ -24,15 +23,25 @@ export default function App() {
     }
   }
 
-  async function playSound() {
-    if(inplay !== undefined) {
-      inplay.sound.unloadAsync();
+  const setSound = async (uri) => {
+    console.log(sound.current);
+    
+    const result = await sound.current.loadAsync({uri:uri}, {}, true);
+   
+    if (result.isLoaded === false) {
+      setLoaded(false);
+    }else {
+      setLoaded(true);
     }
+  }
 
-    setPlaying(true);
-    const sd = await Audio.Sound.createAsync({uri:sound});
-
-    setInplay(sd);
+  const playSound = async () => {
+    const result = await sound.current.getStatusAsync();
+    if(result.isLoaded) {
+      if (!result.isPlaying) {
+        sound.current.playAsync();
+      }
+    }
   }
 
   useEffect(() => {
@@ -40,12 +49,8 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if(sound !== undefined) playSound();
-  }, [sound])
-
-  useEffect(() => {
-    if(inplay !== undefined)  inplay.sound.playAsync();
-  }, [inplay]);
+    playSound();
+  }, [loaded])
 
   const handlePlay = () => {
     
