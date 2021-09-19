@@ -24,14 +24,26 @@ export default function App() {
   }
 
   const setSound = async (uri) => {
-    console.log(sound.current);
+    let load = true;
+
+    if(sound.current._key !== null) {
+      if(sound.current._key.src !== uri) {
+        const ret = await sound.current.unloadAsync();
+        setLoaded(false);
+      }else {
+        load = false;
+      }
+    } 
     
-    const result = await sound.current.loadAsync({uri:uri}, {}, true);
-   
-    if (result.isLoaded === false) {
-      setLoaded(false);
-    }else {
-      setLoaded(true);
+    if(load) {
+      const result = await sound.current.loadAsync({uri:uri}, {}, true);
+     
+      if (result.isLoaded === false) {
+        setLoaded(false);
+      }else {
+        setLoaded(true);
+        setPlaying(true);
+      }
     }
   }
 
@@ -40,6 +52,17 @@ export default function App() {
     if(result.isLoaded) {
       if (!result.isPlaying) {
         sound.current.playAsync();
+        setPlaying(true);
+      }
+    }
+  }
+
+  const pauseSound = async () => {
+    const result = await sound.current.getStatusAsync();
+    if (result.isLoaded) {
+      if (result.isPlaying) {
+        sound.current.pauseAsync();
+        setPlaying(false);
       }
     }
   }
@@ -53,7 +76,11 @@ export default function App() {
   }, [loaded])
 
   const handlePlay = () => {
-    
+    if(playing) {
+      pauseSound();
+    }else {
+      playSound();
+    }
   }
 
   const handleMusic = (uri) => {
