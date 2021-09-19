@@ -1,6 +1,8 @@
 import React, {useState, useEffect, useRef} from 'react';
 import { StyleSheet, Text, View, Image, FlatList } from 'react-native';
 
+import Slider from '@react-native-community/slider';
+
 import { Audio } from 'expo-av';
 
 const playIcon = require('./assets/play.png');
@@ -11,8 +13,11 @@ export default function App() {
   const [playing, setPlaying] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
-  const sound = useRef(new Audio.Sound());
+  const [duration, setDuration] = useState(0);
+  const [millis, setMillis] = useState(0);
 
+  const sound = useRef(new Audio.Sound());  
+  
   const getList = async () => {
     try {
       const response = await fetch('http://localhost:3333/music');
@@ -23,7 +28,9 @@ export default function App() {
     }
   }
 
-  const setSound = async (uri) => {
+  const setSound = async (item) => {
+    let uri = item.uri;
+
     let load = true;
 
     if(sound.current._key !== null) {
@@ -36,13 +43,14 @@ export default function App() {
     } 
     
     if(load) {
-      const result = await sound.current.loadAsync({uri:uri}, {}, true);
-     
+      const result = await sound.current.loadAsync({uri:uri}, {shouldPlay: true}, true);
+      
       if (result.isLoaded === false) {
         setLoaded(false);
       }else {
         setLoaded(true);
         setPlaying(true);
+        setDuration(getMillis(item.time));
       }
     }
   }
@@ -76,11 +84,16 @@ export default function App() {
   }, [loaded])
 
   const handlePlay = () => {
+    //console.log(sound.current._key.currentTime = 28.544063)
     if(playing) {
       pauseSound();
     }else {
       playSound();
     }
+  }
+
+  function getMillis(duration) {
+    return parseFloat(duration)*60;
   }
 
   const handleMusic = (uri) => {
@@ -89,7 +102,7 @@ export default function App() {
 
   const itemlist = ({item}) => (
     <View
-      onClick={() => {handleMusic(item.uri)}}
+      onClick={() => {handleMusic(item)}}
     >
       <Image 
         style={styles.thumbnail}
@@ -97,7 +110,7 @@ export default function App() {
       ></Image>
     </View>
   )
-    
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Adicionadas Recentemente</Text>
@@ -107,6 +120,15 @@ export default function App() {
         renderItem={itemlist}
         keyExtractor={item => item.uri}
       ></FlatList>
+      <Slider
+        style={{width: 200, height: 40}}
+        minimumValue={0}
+        maximumValue={(duration === 0) ? 1 : duration}
+        value={millis}
+        onValueChange={(e) => {
+          if(e !== NaN) sound.current._key.currentTime = e.toFixed(6);
+        }}
+      />
       <Image onClick={handlePlay} style={styles.playButton} source={(playing) ? pauseIcon : playIcon}></Image>
     </View>
   );
